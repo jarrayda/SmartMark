@@ -181,6 +181,11 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
 .mhtxt{font-weight:700;font-size:.8rem;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .mhsub{font-size:.68rem;color:var(--muted);}
 .mhold{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:#d4e6f1;color:var(--muted);font-size:.8rem;text-align:center;padding:20px;}
+.photo-preview-box{padding:9px;border-bottom:1px solid var(--border);background:var(--card);flex-shrink:0;display:flex;justify-content:center;}
+.photo-preview-box img{max-width:100%;max-height:150px;border-radius:7px;object-fit:contain;box-shadow:var(--shadow);cursor:zoom-in;display:block;}
+#photoLightbox{display:none;position:fixed;inset:0;z-index:26000;background:rgba(10,20,30,0.88);align-items:center;justify-content:center;padding:24px;cursor:zoom-out;}
+#photoLightbox.open{display:flex;}
+#photoLightbox img{max-width:92vw;max-height:92vh;border-radius:8px;box-shadow:0 8px 44px rgba(0,0,0,0.5);}
 .mhold svg{opacity:.35;}
 .mhold.gone{display:none;}
 /* #mapIframe handled by .map-zoom-wrap #mapIframe */
@@ -723,6 +728,7 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
             <th style="width:28px"><input type="checkbox" id="mCheck"></th>
             <th>#</th><th>Name</th>
             <th>Export Name <small>(click to edit)</small></th>
+            <th>Description</th>
             <th id="th1" class="csrc">Latitude<br><span class="spill">Source</span></th>
             <th id="th2" class="csrc">Longitude<br><span class="spill">Source</span></th>
             <th id="th3" class="calt">Latitude<br><small>(alt)</small></th>
@@ -778,11 +784,12 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
       <div class="tcard"><div class="twrap"><table>
         <thead><tr>
           <th>#</th><th>Export Name</th>
+          <th>Description</th>
           <th class="csrc">Latitude<br><span class="spill">Source</span></th>
           <th class="csrc">Longitude<br><span class="spill">Source</span></th>
           <th class="calt">Latitude<br><small>(alt)</small></th>
           <th class="calt">Longitude<br><small>(alt)</small></th>
-          
+
         </tr></thead>
         <tbody id="cleanBody"></tbody>
       </table></div></div>
@@ -798,7 +805,7 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
       </div>
       <div class="tcard"><div class="twrap"><table>
         <thead><tr>
-          <th>#</th><th>Name</th><th>Reason</th>
+          <th>#</th><th>Name</th><th>Description</th><th>Reason</th>
           <th class="csrc">Latitude<br><span class="spill">Source</span></th>
           <th class="csrc">Longitude<br><span class="spill">Source</span></th>
           <th class="calt">Latitude<br><small>(alt)</small></th>
@@ -903,6 +910,9 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
       <div class="mhtxt" id="mhtxt">Select a mark to see its location</div>
       <div class="mhsub" id="mhsub">Click any row in the table</div>
     </div>
+  </div>
+  <div class="photo-preview-box" id="photoPreviewBox" style="display:none;">
+    <img id="photoPreviewImg" alt="Photo preview" title="Click to enlarge">
   </div>
   <div class="mhold" id="mhold">
     <!-- Animated pin icon -->
@@ -1020,7 +1030,7 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
         </svg>
       </div>
       <div>
-        <h2>Welcome to SmartMark <span style="font-size:.75rem;font-weight:600;opacity:.7;letter-spacing:.02em;">v4.0-dev</span></h2>
+        <h2>Welcome to SmartMark <span style="font-size:.75rem;font-weight:600;opacity:.7;letter-spacing:.02em;">v4.2-dev</span></h2>
         <p>GPS Waypoint &amp; Track Manager — Deduplicate, Clean, Edit &amp; Export</p>
       </div>
     </div>
@@ -1107,7 +1117,7 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
     <div class="rn-hdr">
       <div>
         <h3>📋 Release Notes</h3>
-        <p>SmartMark v4.0-dev — version history</p>
+        <p>SmartMark v4.2-dev — version history</p>
       </div>
       <button class="rn-close" id="rnClose">✕</button>
     </div>
@@ -1115,9 +1125,23 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
 
       <div class="rn-version">
         <div class="rn-vtag">
-          <span class="rn-vnum">v4.0-dev</span>
+          <span class="rn-vnum">v4.2-dev</span>
           <span class="rn-vdate">Aug 2026</span>
           <span class="rn-vbadge rn-latest">Dev</span>
+        </div>
+        <ul>
+          <li>Description field exposed everywhere a mark's name is shown — All Marks, Exact/Near Duplicates, Same Name groups, Clean Preview and Binned — truncated to 20 characters, click to view the full text</li>
+          <li>Description is read from GPX &lt;desc&gt;, KML &lt;description&gt;, and an optional 5th CSV/TXT column; carried through export in every format (GPX &lt;desc&gt;, CSV column, KML &lt;description&gt;)</li>
+          <li>Description plays no part in duplicate/conflict detection — marks are never grouped or flagged because they share a description</li>
+          <li>Photo-imported marks now store a small low-res preview of the source photo (JPEG/PNG only — HEIC can't be decoded by the browser for this); selecting that mark shows the preview above the map, click to enlarge</li>
+          <li>Preview lives only in this browser tab's memory — cleared on reload, same as everything else in the app</li>
+        </ul>
+      </div>
+
+      <div class="rn-version">
+        <div class="rn-vtag">
+          <span class="rn-vnum">v4.1</span>
+          <span class="rn-vdate">Aug 2026</span>
         </div>
         <ul>
           <li>Photo Import — "Import from Photos" alongside the GPX/CSV/KML/TXT drop zone extracts GPS coordinates straight from photo files and adds them as marks</li>
@@ -1300,6 +1324,10 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
     </div>
   </div>
 </div>
+<!-- PHOTO LIGHTBOX -->
+<div id="photoLightbox">
+  <img id="photoLightboxImg" alt="Photo preview, enlarged">
+</div>
 <!-- EXPORT NAME MODAL -->
 <div class="modal-bg" id="expModal">
   <div class="modal-box" style="max-width:460px">
@@ -1398,10 +1426,21 @@ function _showMap(pts){
     hold.classList.remove('gone');
     document.getElementById('mapZoomWrap').style.display='none';
     links.style.display='none'; coords.style.display='none';
+    document.getElementById('photoPreviewBox').style.display='none';
     _awSyncFab();
     htxt.textContent='Select a mark to see its location';
     hsub.textContent='Click any row in the table';
     dot.className='mdot'; return;
+  }
+
+  // Photo-derived marks carry a low-res thumbnail — show it above the map
+  // when exactly one such mark is selected.
+  const photoBox=document.getElementById('photoPreviewBox');
+  if(pts.length===1&&pts[0].thumb){
+    document.getElementById('photoPreviewImg').src=pts[0].thumb;
+    photoBox.style.display='flex';
+  } else {
+    photoBox.style.display='none';
   }
 
   hold.classList.add('gone');
@@ -1446,6 +1485,18 @@ function _showMap(pts){
   coords.style.display='block';
   coords.innerHTML=pts.map(p=>`<div class="mcrow"><span class="mcname">${esc(p.name)}</span><span class="mcdms">${dms(p.lat,true)}<br>${dms(p.lon,false)}</span></div>`).join('');
 }
+
+// ─── PHOTO LIGHTBOX (click the preview to enlarge) ────
+(function(){
+  const box=document.getElementById('photoPreviewBox');
+  const lb=document.getElementById('photoLightbox');
+  const lbImg=document.getElementById('photoLightboxImg');
+  box.addEventListener('click',()=>{
+    lbImg.src=document.getElementById('photoPreviewImg').src;
+    lb.classList.add('open');
+  });
+  lb.addEventListener('click',()=>lb.classList.remove('open'));
+})();
 
 // ─── MAP ZOOM BUTTONS ────────────────────────────────
 function applyMapZoom(){
@@ -1524,6 +1575,32 @@ function label(w){
 }
 
 // ─── INLINE EXPORT-NAME EDIT ─────────────────────────
+// ─── DESCRIPTION CELL (click to expand — not part of dedup matching) ──
+function truncateDesc(s,n){ s=(s||'').trim(); return s.length>n?s.slice(0,n)+'…':s; }
+function makeDescEl(w){
+  const sp=document.createElement('span');
+  sp.className='desc-cell';
+  const full=(w.desc||'').trim();
+  if(!full){ sp.textContent='—'; sp.style.color='var(--muted)'; return sp; }
+  const short=truncateDesc(full,20);
+  sp.textContent=short;
+  if(full.length>20){
+    sp.title='Click to view full description';
+    sp.style.cursor='pointer';
+    sp.style.borderBottom='1px dotted var(--muted)';
+    let expanded=false;
+    sp.addEventListener('click',e=>{
+      e.stopPropagation();
+      expanded=!expanded;
+      sp.textContent=expanded?full:short;
+      sp.style.whiteSpace=expanded?'normal':'nowrap';
+      sp.style.display=expanded?'inline-block':'inline';
+      sp.title=expanded?'Click to collapse':'Click to view full description';
+    });
+  }
+  return sp;
+}
+
 function attachENtoTD(td,sp){
   // Make the entire td cell clickable, not just the span text
   td.style.cursor='text';
@@ -1650,7 +1727,8 @@ function parseGPX(txt,fn){
       if(isNaN(lat)||isNaN(lon))return null;
       const nm=n.querySelector('name')?.textContent?.trim()||'WPT-'+String(i+1).padStart(4,'0');
       const ts=n.querySelector('time')?.textContent?.trim();
-      return{lat,lon,name:nm,dt:ts?new Date(ts):null,sf:'gpx',ff:fn};
+      const desc=n.querySelector('desc')?.textContent?.trim()||'';
+      return{lat,lon,name:nm,dt:ts?new Date(ts):null,sf:'gpx',ff:fn,desc};
     }).filter(Boolean);
     result._skipped=skipped;
     result._skippedTrk=skippedTrk;
@@ -1662,7 +1740,8 @@ function parseGPX(txt,fn){
     if(isNaN(lat)||isNaN(lon))return null;
     const nm=n.querySelector('name')?.textContent?.trim()||'WPT-'+String(i+1).padStart(4,'0');
     const ts=n.querySelector('time')?.textContent?.trim();
-    return{lat,lon,name:nm,dt:ts?new Date(ts):null,sf:'gpx',ff:fn};
+    const desc=n.querySelector('desc')?.textContent?.trim()||'';
+    return{lat,lon,name:nm,dt:ts?new Date(ts):null,sf:'gpx',ff:fn,desc};
   }).filter(Boolean);
 }
 
@@ -1676,7 +1755,8 @@ function parseKML(txt,fn){
     const lon=parseFloat(pts[0]),lat=parseFloat(pts[1]);
     if(isNaN(lat)||isNaN(lon))return null;
     const ts=pm.querySelector('when')?.textContent?.trim();
-    return{lat,lon,name:nm,dt:ts?new Date(ts):null,sf:'kml',ff:fn};
+    const desc=pm.querySelector('description')?.textContent?.trim()||'';
+    return{lat,lon,name:nm,dt:ts?new Date(ts):null,sf:'kml',ff:fn,desc};
   }).filter(Boolean);
 }
 
@@ -1690,7 +1770,8 @@ function parseTXT(txt,fn,fmt){
       if(isNaN(lat)||isNaN(lon))return null;
       const nm=cols[2]||'WPT-'+String(i+1).padStart(4,'0');
       let dt=null;if(cols[3]){const d=new Date(cols[3]);if(!isNaN(d.getTime()))dt=d;}
-      return{lat,lon,name:nm,dt,sf:fmt,ff:fn};
+      const desc=cols[4]||'';
+      return{lat,lon,name:nm,dt,sf:fmt,ff:fn,desc};
     }).filter(Boolean);
 }
 
@@ -1705,7 +1786,7 @@ function finalize(raw){
   return raw.map((w,i)=>({
     id:String(Date.now()+i)+String(Math.random()).slice(2,7),
     name:w.name,en:w.name,lat:w.lat,lon:w.lon,
-    dt:w.dt,sf:w.sf||'dd',ff:w.ff||'',
+    dt:w.dt,sf:w.sf||'dd',ff:w.ff||'',desc:w.desc||'',thumb:w.thumb||null,
     status:'ok',note:'',keepInGroup:false,snFlag:false
   }));
 }
@@ -1905,7 +1986,8 @@ function coordTH(sl,al){
           <th class="csrc">Longitude<br><span class="spill">Source · ${sl}</span></th>
           <th class="calt">Latitude<br><small>(${al})</small></th>
           <th class="calt">Longitude<br><small>(${al})</small></th>
-          <th style="color:var(--muted);font-size:.69rem">Date<br><small>(AEST)</small></th>`;
+          <th style="color:var(--muted);font-size:.69rem">Date<br><small>(AEST)</small></th>
+          <th>Description</th>`;
 }
 
 // ─── RENDER ALL MARKS ────────────────────────────────
@@ -1920,7 +2002,7 @@ function renderAll(){
   // Show a "no results" row if search yields nothing
   if(term && visible.length===0){
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td colspan="10" style="text-align:center;padding:20px;color:var(--muted);font-size:.8rem;">No marks match "<strong>${esc(term)}</strong>"</td>`;
+    tr.innerHTML=`<td colspan="11" style="text-align:center;padding:20px;color:var(--muted);font-size:.8rem;">No marks match "<strong>${esc(term)}</strong>"</td>`;
     tb.appendChild(tr);
     updateColHeaders(); return;
   }
@@ -1937,6 +2019,7 @@ function renderAll(){
       <td style="color:var(--muted);font-size:.69rem">${i+1}</td>
       <td style="font-weight:600;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(w.name)}">${term?esc(w.name).replace(new RegExp('('+term.replace(/[.*+?^${}()|[\\]\\\\]/g,'\\\\$&')+')','gi'),'<mark style="background:#fef3c7;border-radius:2px">$1</mark>'):esc(w.name)}</td>
       <td class="en-td-${w.id}" style="cursor:text;min-width:90px;"></td>
+      <td class="desc-td-${w.id}" style="font-size:.75rem;max-width:140px;"></td>
       <td class="mono csrc">${ls}</td>
       <td class="mono csrc">${lns}</td>
       <td class="mono calt">${la}</td>
@@ -1944,6 +2027,7 @@ function renderAll(){
       <td style="font-size:.68rem;color:var(--muted);white-space:nowrap">${fmtWptDate(w)}</td>
       <td>${bdg[w.status]||''}</td>`;
     const _en0=makeEN(w);const _td0=tr.querySelector('.en-td-'+w.id);_td0.appendChild(_en0);attachENtoTD(_td0,_en0);
+    tr.querySelector('.desc-td-'+w.id).appendChild(makeDescEl(w));
     tr.addEventListener('click',e=>{
       if(e.target.type==='checkbox'||e.target.tagName==='INPUT'||e.target.classList.contains('ename')||e.target.classList.contains('einput'))return;
       const multi=e.shiftKey||e.ctrlKey||e.metaKey;
@@ -1964,7 +2048,7 @@ function renderAll(){
 // ─── GROUP CARD HELPER ───────────────────────────────
 function coordTDs(w){
   const {ls,lns,la,lna}=coordCells(w);
-  return `<td class="mono csrc" style="font-size:.68rem">${ls}</td><td class="mono csrc" style="font-size:.68rem">${lns}</td><td class="mono calt" style="font-size:.68rem">${la}</td><td class="mono calt" style="font-size:.68rem">${lna}</td><td style="font-size:.68rem;color:var(--muted);white-space:nowrap">${fmtWptDate(w)}</td>`;
+  return `<td class="mono csrc" style="font-size:.68rem">${ls}</td><td class="mono csrc" style="font-size:.68rem">${lns}</td><td class="mono calt" style="font-size:.68rem">${la}</td><td class="mono calt" style="font-size:.68rem">${lna}</td><td style="font-size:.68rem;color:var(--muted);white-space:nowrap">${fmtWptDate(w)}</td><td class="desc-td-${w.id}" style="font-size:.71rem;max-width:140px;"></td>`;
 }
 
 // ─── RENDER EXACT GROUPS ─────────────────────────────
@@ -1999,7 +2083,7 @@ function renderExact(){
         </table></div>
       </div>`;
     list.appendChild(card);
-    g.members.forEach(w=>{const td=card.querySelector('.etd-'+w.id);if(td){const sp=makeEN(w);td.appendChild(sp);attachENtoTD(td,sp);}});
+    g.members.forEach(w=>{const td=card.querySelector('.etd-'+w.id);if(td){const sp=makeEN(w);td.appendChild(sp);attachENtoTD(td,sp);}const dtd=card.querySelector('.desc-td-'+w.id);if(dtd)dtd.appendChild(makeDescEl(w));});
   });
 }
 
@@ -2044,7 +2128,7 @@ function renderNear(){
         </div>
       </div>`;
     list.appendChild(card);
-    g.members.forEach(w=>{const td=card.querySelector('.ntd-'+w.id);if(td){const sp=makeEN(w);td.appendChild(sp);attachENtoTD(td,sp);}});
+    g.members.forEach(w=>{const td=card.querySelector('.ntd-'+w.id);if(td){const sp=makeEN(w);td.appendChild(sp);attachENtoTD(td,sp);}const dtd=card.querySelector('.desc-td-'+w.id);if(dtd)dtd.appendChild(makeDescEl(w));});
   });
 }
 
@@ -2089,7 +2173,7 @@ function renderSameName(){
         </div>
       </div>`;
     list.appendChild(card);
-    g.members.forEach(w=>{const td=card.querySelector('.std-'+w.id);if(td){const sp=makeEN(w);td.appendChild(sp);attachENtoTD(td,sp);}});
+    g.members.forEach(w=>{const td=card.querySelector('.std-'+w.id);if(td){const sp=makeEN(w);td.appendChild(sp);attachENtoTD(td,sp);}const dtd=card.querySelector('.desc-td-'+w.id);if(dtd)dtd.appendChild(makeDescEl(w));});
   });
 }
 
@@ -2249,10 +2333,12 @@ function buildClean(){
     const tr=document.createElement('tr');tr.className='rn';
     tr.innerHTML=`<td style="color:var(--muted);font-size:.69rem">${i+1}</td>
       <td style="font-weight:600;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(label(w))}</td>
+      <td class="desc-td-${w.id}" style="font-size:.71rem;max-width:140px;"></td>
       <td class="mono csrc" style="font-size:.68rem">${ls}</td>
       <td class="mono csrc" style="font-size:.68rem">${lns}</td>
       <td class="mono calt" style="font-size:.68rem">${la}</td>
       <td class="mono calt" style="font-size:.68rem">${lna}</td>`;
+    tr.querySelector('.desc-td-'+w.id).appendChild(makeDescEl(w));
     tr.addEventListener('click',()=>showMap([w]));
     tb.appendChild(tr);
   });
@@ -2268,12 +2354,14 @@ function buildClean(){
     const tr=document.createElement('tr');tr.className='rd';
     tr.innerHTML=`<td style="color:var(--muted);font-size:.69rem">${i+1}</td>
       <td style="font-weight:600;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(w.name)}">${esc(w.name)}</td>
+      <td class="desc-td-${w.id}" style="font-size:.71rem;max-width:140px;"></td>
       <td><span class="badge ${w.status==='exact_dupe'?'bex':'bnd'}">${esc(reason)}</span></td>
       <td class="mono csrc" style="font-size:.68rem">${ls}</td>
       <td class="mono csrc" style="font-size:.68rem">${lns}</td>
       <td class="mono calt" style="font-size:.68rem">${la}</td>
       <td class="mono calt" style="font-size:.68rem">${lna}</td>
       <td style="font-size:.68rem;color:var(--muted);white-space:nowrap">${fmtWptDate(w)}</td>`;
+    tr.querySelector('.desc-td-'+w.id).appendChild(makeDescEl(w));
     tr.addEventListener('click',()=>showMap([w]));
     tb2.appendChild(tr);
   });
@@ -2482,6 +2570,7 @@ function buildGPX(pts,creator,fmt,tracks){
   const wpts=pts.map(w=>[
     `  <wpt lat="${w.lat.toFixed(8)}" lon="${w.lon.toFixed(8)}">`,
     `    <name>${eX(label(w))}<`+slash+`name>`,
+    w.desc&&w.desc.trim()?`    <desc>${eX(w.desc.trim())}<`+slash+`desc>`:'',
     w.dt?`    <time>${w.dt.toISOString()}<`+slash+`time>`:'',
     `    <cmt>${eX(eLat(w)+', '+eLon(w))}<`+slash+`cmt>`,
     `  <`+slash+`wpt>`
@@ -2620,11 +2709,15 @@ function doExport(){
   if(fileFmt==='gpx'){
     dl(safe+'.gpx',buildGPX(pts,'SmartMark',coordFmt,keptTracks),'application/gpx+xml');
   } else if(fileFmt==='csv'){
-    const hdr='name,lat_src,lon_src,lat_dd,lon_dd';
-    const rows=pts.map(w=>`"${label(w).replace(/"/g,'""')}","${exportCoord(w,true,coordFmt)}","${exportCoord(w,false,coordFmt)}",${w.lat.toFixed(8)},${w.lon.toFixed(8)}`);
+    const hdr='name,description,lat_src,lon_src,lat_dd,lon_dd';
+    const rows=pts.map(w=>`"${label(w).replace(/"/g,'""')}","${(w.desc||'').replace(/"/g,'""')}","${exportCoord(w,true,coordFmt)}","${exportCoord(w,false,coordFmt)}",${w.lat.toFixed(8)},${w.lon.toFixed(8)}`);
     dl(safe+'.csv',[hdr,...rows].join('\n'),'text/csv');
   } else if(fileFmt==='kml'){
-    const pm=pts.map(w=>`  <Placemark>\n    <n>${eX(label(w))}</n>\n    <description>${eX(exportCoord(w,true,coordFmt)+', '+exportCoord(w,false,coordFmt))}</description>\n    <Point><coordinates>${w.lon.toFixed(8)},${w.lat.toFixed(8)},0</coordinates></Point>\n  </Placemark>`);
+    const pm=pts.map(w=>{
+      const coordLine=exportCoord(w,true,coordFmt)+', '+exportCoord(w,false,coordFmt);
+      const descBody=w.desc&&w.desc.trim()?eX(w.desc.trim())+'\n'+eX(coordLine):eX(coordLine);
+      return `  <Placemark>\n    <n>${eX(label(w))}</n>\n    <description>${descBody}</description>\n    <Point><coordinates>${w.lon.toFixed(8)},${w.lat.toFixed(8)},0</coordinates></Point>\n  </Placemark>`;
+    });
     dl(safe+'.kml',`<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document>\n<n>${eX(raw)}</n>\n${pm.join('\n')}\n</Document></kml>`,'application/vnd.google-earth.kml+xml');
   }
 
@@ -3999,51 +4092,80 @@ function extractPhotoGPS(buffer){
 // Mirrors loadFile()'s flow exactly: extracted points go straight into WP
 // via finalize(), get a Loaded Files chip, and run through the normal
 // analyse/dedupe pipeline — photos are just another mark source.
+// Renders a low-res preview (max 220px, JPEG ~60% quality) via canvas so the
+// mark can show "what this photo looked like" even after the source file is
+// gone. Only works for formats the browser can actually decode into an
+// <img> — JPEG/PNG in practice; HEIC has no native decode support in most
+// browsers, so this simply fails (caught by the caller) and no thumb is
+// stored for those. Lives only in memory — gone on reload, like everything
+// else in this app.
+function makePhotoThumb(buffer,mime){
+  return new Promise((resolve,reject)=>{
+    const blob=new Blob([buffer],{type:mime||'image/jpeg'});
+    const url=URL.createObjectURL(blob);
+    const img=new Image();
+    img.onload=()=>{
+      try{
+        const w=img.naturalWidth,h=img.naturalHeight;
+        if(!w||!h) throw new Error('no dimensions');
+        const maxDim=220;
+        const scale=Math.min(1,maxDim/Math.max(w,h));
+        const cw=Math.max(1,Math.round(w*scale)),ch=Math.max(1,Math.round(h*scale));
+        const canvas=document.createElement('canvas');
+        canvas.width=cw;canvas.height=ch;
+        canvas.getContext('2d').drawImage(img,0,0,cw,ch);
+        const dataUrl=canvas.toDataURL('image/jpeg',0.6);
+        URL.revokeObjectURL(url);
+        resolve(dataUrl);
+      }catch(e){ URL.revokeObjectURL(url); reject(e); }
+    };
+    img.onerror=()=>{ URL.revokeObjectURL(url); reject(new Error('decode failed')); };
+    img.src=url;
+  });
+}
+
 let photoBatchCount=0;
-function loadPhotos(fileList){
+async function loadPhotos(fileList){
   const list=[...fileList].filter(f=>/^image\//.test(f.type)||/\.(jpe?g|png|heic|heif|gif|bmp|tiff?)$/i.test(f.name));
   if(!list.length){ toast('No image files found in that selection','o'); return; }
   const batchName='Photos '+(++photoBatchCount);
   showLoader('Reading '+list.length+(list.length===1?' photo…':' photos…'));
-  const raw=[]; let skipped=0, done=0;
+  const raw=[]; let skipped=0;
 
-  function finish(){
-    hideLoader();
-    document.getElementById('fiPhoto').value='';
-    if(!raw.length){
-      toast(`No GPS data found in ${skipped} photo${skipped===1?'':'s'}`,'r');
-      return;
-    }
-    const newWP=finalize(raw);
-    WP=[...WP,...newWP];
-    selIds.clear();
-    loadedFileMeta.push({name:batchName,count:raw.length,fmt:'GPS',skipped});
-    document.getElementById('uploadSec').style.display='none';
-    document.getElementById('loadedSec').style.display='block';
-    renderFileChips();
-    renderAll(); badges();
-    showLoader('Analysing '+raw.length+' marks…');
-    setTimeout(()=>{
-      analyse();
-      hideLoader();
-      const msg=skipped
-        ? `✓ ${raw.length} mark${raw.length===1?'':'s'} added from photos — ${skipped} skipped (no GPS)`
-        : `✓ ${raw.length} mark${raw.length===1?'':'s'} added from photos`;
-      toast(msg,'g');
-    },840);
+  for(const file of list){
+    try{
+      const buffer=await file.arrayBuffer();
+      const gps=extractPhotoGPS(buffer);
+      if(!gps){ skipped++; continue; }
+      const point={lat:gps.lat,lon:gps.lon,name:file.name.replace(/\.[^.]+$/,''),dt:new Date(file.lastModified),sf:'dd',ff:batchName,desc:''};
+      try{ point.thumb=await makePhotoThumb(buffer,file.type); }catch(e){ /* no decodable preview (e.g. HEIC) — mark still gets added, just no thumbnail */ }
+      raw.push(point);
+    }catch(e){ skipped++; }
   }
 
-  list.forEach(file=>{
-    const r=new FileReader();
-    r.onload=e=>{
-      const gps=extractPhotoGPS(e.target.result);
-      if(gps) raw.push({lat:gps.lat,lon:gps.lon,name:file.name.replace(/\.[^.]+$/,''),dt:new Date(file.lastModified),sf:'dd',ff:batchName});
-      else skipped++;
-      done++; if(done===list.length) finish();
-    };
-    r.onerror=()=>{ skipped++; done++; if(done===list.length) finish(); };
-    r.readAsArrayBuffer(file);
-  });
+  hideLoader();
+  document.getElementById('fiPhoto').value='';
+  if(!raw.length){
+    toast(`No GPS data found in ${skipped} photo${skipped===1?'':'s'}`,'r');
+    return;
+  }
+  const newWP=finalize(raw);
+  WP=[...WP,...newWP];
+  selIds.clear();
+  loadedFileMeta.push({name:batchName,count:raw.length,fmt:'GPS',skipped});
+  document.getElementById('uploadSec').style.display='none';
+  document.getElementById('loadedSec').style.display='block';
+  renderFileChips();
+  renderAll(); badges();
+  showLoader('Analysing '+raw.length+' marks…');
+  setTimeout(()=>{
+    analyse();
+    hideLoader();
+    const msg=skipped
+      ? `✓ ${raw.length} mark${raw.length===1?'':'s'} added from photos — ${skipped} skipped (no GPS)`
+      : `✓ ${raw.length} mark${raw.length===1?'':'s'} added from photos`;
+    toast(msg,'g');
+  },840);
 }
 
 (function(){
