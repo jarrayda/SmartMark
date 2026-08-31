@@ -181,11 +181,14 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
 .mhtxt{font-weight:700;font-size:.8rem;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .mhsub{font-size:.68rem;color:var(--muted);}
 .mhold{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:#d4e6f1;color:var(--muted);font-size:.8rem;text-align:center;padding:20px;}
-.photo-preview-box{padding:9px;border-bottom:1px solid var(--border);background:var(--card);flex-shrink:0;display:flex;justify-content:center;}
-.photo-preview-box img{max-width:100%;max-height:150px;border-radius:7px;object-fit:contain;box-shadow:var(--shadow);cursor:zoom-in;display:block;}
-#photoLightbox{display:none;position:fixed;inset:0;z-index:26000;background:rgba(10,20,30,0.88);align-items:center;justify-content:center;padding:24px;cursor:zoom-out;}
+.photo-preview-box{padding:10px;border-top:1px solid var(--border);background:var(--card);flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:5px;}
+.photo-preview-box img{max-width:100%;max-height:170px;border-radius:7px;object-fit:contain;box-shadow:var(--shadow);cursor:zoom-in;display:block;}
+.photo-preview-meta{font-size:.68rem;color:var(--muted);text-align:center;}
+#photoLightbox{display:none;position:fixed;inset:0;z-index:26000;background:rgba(10,20,30,0.9);align-items:center;justify-content:center;padding:24px;}
 #photoLightbox.open{display:flex;}
-#photoLightbox img{max-width:92vw;max-height:92vh;border-radius:8px;box-shadow:0 8px 44px rgba(0,0,0,0.5);}
+#photoLightboxInner{display:flex;flex-direction:column;align-items:center;gap:10px;max-width:94vw;max-height:94vh;cursor:default;}
+#photoLightbox img{max-width:94vw;max-height:84vh;border-radius:8px;box-shadow:0 8px 44px rgba(0,0,0,0.5);cursor:zoom-out;}
+.photo-lightbox-meta{font-size:.78rem;color:rgba(255,255,255,0.85);text-align:center;background:rgba(0,0,0,0.35);padding:6px 14px;border-radius:20px;}
 .mhold svg{opacity:.35;}
 .mhold.gone{display:none;}
 /* #mapIframe handled by .map-zoom-wrap #mapIframe */
@@ -231,8 +234,10 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
 }
 .welcome-modal-bg.dissolving{opacity:0;pointer-events:none;}
 .welcome-modal-bg.closed{display:none;}
-.welcome-box{background:#eef3f9;border-radius:16px;max-width:680px;width:100%;box-shadow:0 16px 60px rgba(26,95,180,0.35);overflow:hidden;}
+.welcome-box{background:#eef3f9;border-radius:16px;max-width:680px;width:100%;box-shadow:0 16px 60px rgba(26,95,180,0.35);overflow:hidden;position:relative;}
 .welcome-header{background:var(--header-bg);padding:22px 26px 18px;display:flex;align-items:center;gap:14px;}
+.welcome-close-x{position:absolute;top:14px;right:14px;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.12);border:none;color:rgba(255,255,255,0.85);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;z-index:5;}
+.welcome-close-x:hover{background:rgba(255,255,255,0.25);color:#fff;}
 .welcome-logo{width:48px;height:48px;background:rgba(255,255,255,0.12);border:1.5px solid rgba(255,255,255,0.22);border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .welcome-header h2{color:#fff;font-size:1.25rem;font-weight:800;line-height:1.1;}
 .welcome-header p{color:rgba(200,220,240,0.75);font-size:.73rem;margin-top:3px;}
@@ -733,6 +738,7 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
             <th id="th2" class="csrc">Longitude<br><span class="spill">Source</span></th>
             <th id="th3" class="calt">Latitude<br><small>(alt)</small></th>
             <th id="th4" class="calt">Longitude<br><small>(alt)</small></th>
+            <th>Source</th>
             <th style="color:var(--muted);font-size:.69rem">Date<br><small>(AEST)</small></th>
             <th>Status</th>
           </tr></thead>
@@ -789,7 +795,7 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
           <th class="csrc">Longitude<br><span class="spill">Source</span></th>
           <th class="calt">Latitude<br><small>(alt)</small></th>
           <th class="calt">Longitude<br><small>(alt)</small></th>
-
+          <th>Source</th>
         </tr></thead>
         <tbody id="cleanBody"></tbody>
       </table></div></div>
@@ -810,6 +816,7 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
           <th class="csrc">Longitude<br><span class="spill">Source</span></th>
           <th class="calt">Latitude<br><small>(alt)</small></th>
           <th class="calt">Longitude<br><small>(alt)</small></th>
+          <th>Source</th>
           <th style="color:var(--muted);font-size:.69rem">Date<br><small>(AEST)</small></th>
         </tr></thead>
         <tbody id="binnedBody"></tbody>
@@ -911,9 +918,6 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
       <div class="mhsub" id="mhsub">Click any row in the table</div>
     </div>
   </div>
-  <div class="photo-preview-box" id="photoPreviewBox" style="display:none;">
-    <img id="photoPreviewImg" alt="Photo preview" title="Click to enlarge">
-  </div>
   <div class="mhold" id="mhold">
     <!-- Animated pin icon -->
     <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.1" style="color:#a8bdd4">
@@ -993,6 +997,10 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
     <div id="mapPickBanner">Click the map to place the mark — or press Esc to cancel</div>
     <div id="mapPickOverlay"></div>
   </div>
+  <div class="photo-preview-box" id="photoPreviewBox" style="display:none;">
+    <img id="photoPreviewImg" alt="Photo preview" title="Click to view full size">
+    <div class="photo-preview-meta" id="photoPreviewMeta"></div>
+  </div>
   <div class="mcoords" id="mcoords" style="display:none"></div>
 </div>
 
@@ -1015,6 +1023,7 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
 <!-- WELCOME MODAL -->
 <div class="welcome-modal-bg" id="welcomeModal" style="opacity:0;transition:opacity .5s ease;">
   <div class="welcome-box">
+    <button class="welcome-close-x" id="welcomeCloseX" title="Close">✕</button>
     <div class="welcome-header">
       <div class="welcome-logo">
         <svg width="34" height="34" viewBox="0 0 38 38" fill="none">
@@ -1030,7 +1039,7 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
         </svg>
       </div>
       <div>
-        <h2>Welcome to SmartMark <span style="font-size:.75rem;font-weight:600;opacity:.7;letter-spacing:.02em;">v4.2-dev</span></h2>
+        <h2>Welcome to SmartMark <span style="font-size:.75rem;font-weight:600;opacity:.7;letter-spacing:.02em;">v5-dev</span></h2>
         <p>GPS Waypoint &amp; Track Manager — Deduplicate, Clean, Edit &amp; Export</p>
       </div>
     </div>
@@ -1044,6 +1053,10 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
           <div class="wt"><strong>Load &amp; auto-analyse</strong><span>Drop or browse a file — duplicates and conflicts are found immediately, no extra steps.</span></div>
         </li>
         <li>
+          <div class="wi" style="background:#dbeafe">📷</div>
+          <div class="wt"><strong>Import from Photos</strong><span>Drop one or more geotagged photos to pull GPS coordinates straight into marks — filename becomes the name, photo date becomes the mark date. Select the mark to see the photo, click to view full size.</span></div>
+        </li>
+        <li>
           <div class="wi" style="background:#fee2e2">🔁</div>
           <div class="wt"><strong>Exact &amp; near duplicates</strong><span>Marks at identical coordinates or within your distance threshold are grouped. Pick which ones to keep.</span></div>
         </li>
@@ -1054,6 +1067,14 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
         <li>
           <div class="wi" style="background:#c8dff0">✏️</div>
           <div class="wt"><strong>Edit export names</strong><span>Click any name in the table to set a custom export label — the original is always preserved.</span></div>
+        </li>
+        <li>
+          <div class="wi" style="background:#e0e7ff">📝</div>
+          <div class="wt"><strong>Description &amp; Source</strong><span>Every mark shows its description (from GPX/KML/CSV) and which file — or photo — it came from. Click a description to edit it.</span></div>
+        </li>
+        <li>
+          <div class="wi" style="background:#fef0d9">📍</div>
+          <div class="wt"><strong>Add a mark manually</strong><span>Type coordinates directly or click a spot on the map — no file needed.</span></div>
         </li>
         <li>
           <div class="wi" style="background:var(--sand-lt)">⚙️</div>
@@ -1117,7 +1138,7 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
     <div class="rn-hdr">
       <div>
         <h3>📋 Release Notes</h3>
-        <p>SmartMark v4.2-dev — version history</p>
+        <p>SmartMark v5-dev — version history</p>
       </div>
       <button class="rn-close" id="rnClose">✕</button>
     </div>
@@ -1125,9 +1146,23 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
 
       <div class="rn-version">
         <div class="rn-vtag">
-          <span class="rn-vnum">v4.2-dev</span>
+          <span class="rn-vnum">v5-dev</span>
           <span class="rn-vdate">Aug 2026</span>
           <span class="rn-vbadge rn-latest">Dev</span>
+        </div>
+        <ul>
+          <li>Description is now editable directly in the grid, exactly like Export Name — click to open, type, click away or Enter to save</li>
+          <li>Photo-derived marks show a small 📷 next to their name in All Marks and Binned, so you can tell at a glance which marks came from a photo vs a GPX/KML/CSV file</li>
+          <li>New Source column in every grid, right after the coordinate columns — shows the file (or photo) each mark came from</li>
+          <li>Photo preview quality increased and moved to sit below the map instead of above it; clicking it now opens a full-quality lightbox with the original, unmodified photo — not a downscaled copy — plus its dimensions and file size</li>
+          <li>Welcome/help screen: added feature bullets that were missing (Import from Photos, Description &amp; Source, Add a mark manually), added a close button, and sped up the dismiss animation</li>
+        </ul>
+      </div>
+
+      <div class="rn-version">
+        <div class="rn-vtag">
+          <span class="rn-vnum">v4.2</span>
+          <span class="rn-vdate">Aug 2026</span>
         </div>
         <ul>
           <li>Description field exposed everywhere a mark's name is shown — All Marks, Exact/Near Duplicates, Same Name groups, Clean Preview and Binned — truncated to 20 characters, click to view the full text</li>
@@ -1326,7 +1361,10 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
 </div>
 <!-- PHOTO LIGHTBOX -->
 <div id="photoLightbox">
-  <img id="photoLightboxImg" alt="Photo preview, enlarged">
+  <div id="photoLightboxInner">
+    <img id="photoLightboxImg" alt="Photo preview, enlarged">
+    <div class="photo-lightbox-meta" id="photoLightboxMeta"></div>
+  </div>
 </div>
 <!-- EXPORT NAME MODAL -->
 <div class="modal-bg" id="expModal">
@@ -1410,6 +1448,7 @@ document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>setT
 // "Open in Google Maps" button provides the real map view.
 // No external scripts needed — works in any sandbox.
 let mapTimer=null, lmap=null, lmarkers=[];  // lmap/lmarkers kept for compat
+let _currentPhotoMark=null; // the single selected mark's photo data, for the lightbox
 
 function showMap(pts){clearTimeout(mapTimer);mapTimer=setTimeout(()=>_showMap(pts),80);}
 
@@ -1433,13 +1472,18 @@ function _showMap(pts){
     dot.className='mdot'; return;
   }
 
-  // Photo-derived marks carry a low-res thumbnail — show it above the map
-  // when exactly one such mark is selected.
+  // Photo-derived marks carry a preview — show it below the map when
+  // exactly one such mark is selected.
   const photoBox=document.getElementById('photoPreviewBox');
   if(pts.length===1&&pts[0].thumb){
-    document.getElementById('photoPreviewImg').src=pts[0].thumb;
+    const p=pts[0];
+    _currentPhotoMark=p;
+    document.getElementById('photoPreviewImg').src=p.thumb;
+    document.getElementById('photoPreviewMeta').textContent=
+      (p.imgW&&p.imgH?`${p.imgW}×${p.imgH}`:'')+(p.fileSize?' · '+fmtBytes(p.fileSize):'')+(p.full?' · click to view full size':'');
     photoBox.style.display='flex';
   } else {
+    _currentPhotoMark=null;
     photoBox.style.display='none';
   }
 
@@ -1486,16 +1530,30 @@ function _showMap(pts){
   coords.innerHTML=pts.map(p=>`<div class="mcrow"><span class="mcname">${esc(p.name)}</span><span class="mcdms">${dms(p.lat,true)}<br>${dms(p.lon,false)}</span></div>`).join('');
 }
 
-// ─── PHOTO LIGHTBOX (click the preview to enlarge) ────
+// ─── PHOTO LIGHTBOX (click the preview for a full-quality view) ────
 (function(){
   const box=document.getElementById('photoPreviewBox');
   const lb=document.getElementById('photoLightbox');
   const lbImg=document.getElementById('photoLightboxImg');
+  const lbMeta=document.getElementById('photoLightboxMeta');
   box.addEventListener('click',()=>{
-    lbImg.src=document.getElementById('photoPreviewImg').src;
+    const p=_currentPhotoMark;
+    if(!p) return;
+    // .full is an object URL over the original, unmodified file — exact
+    // original quality/resolution. Falls back to the small thumb only if
+    // a full-quality version couldn't be made (shouldn't normally happen).
+    lbImg.src=p.full||p.thumb;
+    const parts=[];
+    if(p.srcFile) parts.push(esc(p.srcFile));
+    if(p.imgW&&p.imgH) parts.push(`${p.imgW}×${p.imgH}`);
+    if(p.fileSize) parts.push(fmtBytes(p.fileSize));
+    if(!p.full) parts.push('low-res preview only');
+    lbMeta.textContent=parts.join(' · ');
     lb.classList.add('open');
   });
-  lb.addEventListener('click',()=>lb.classList.remove('open'));
+  lb.addEventListener('click',e=>{
+    if(e.target===lb||e.target===lbImg) lb.classList.remove('open');
+  });
 })();
 
 // ─── MAP ZOOM BUTTONS ────────────────────────────────
@@ -1803,6 +1861,8 @@ function finalize(raw){
     id:String(Date.now()+i)+String(Math.random()).slice(2,7),
     name:w.name,en:w.name,lat:w.lat,lon:w.lon,
     dt:w.dt,sf:w.sf||'dd',ff:w.ff||'',desc:w.desc||'',thumb:w.thumb||null,photo:!!w.photo,
+    full:w.full||null,imgW:w.imgW||0,imgH:w.imgH||0,fileSize:w.fileSize||0,
+    srcFile:w.srcFile||w.ff||'',
     status:'ok',note:'',keepInGroup:false,snFlag:false
   }));
 }
@@ -1997,11 +2057,18 @@ function fmtWptDate(w){
   return d.toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'2-digit',timeZone:'UTC'});
 }
 
+// The file (or "Photos N" batch) a mark came from — 📷 marks it as photo-derived
+function srcCell(w){
+  const s=w.srcFile||w.ff||'—';
+  return (w.photo?'<span title="From photo import" style="margin-right:3px;">📷</span>':'')+esc(s);
+}
+
 function coordTH(sl,al){
   return `<th class="csrc">Latitude<br><span class="spill">Source · ${sl}</span></th>
           <th class="csrc">Longitude<br><span class="spill">Source · ${sl}</span></th>
           <th class="calt">Latitude<br><small>(${al})</small></th>
           <th class="calt">Longitude<br><small>(${al})</small></th>
+          <th>Source</th>
           <th style="color:var(--muted);font-size:.69rem">Date<br><small>(AEST)</small></th>
           <th>Description</th>`;
 }
@@ -2018,7 +2085,7 @@ function renderAll(){
   // Show a "no results" row if search yields nothing
   if(term && visible.length===0){
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td colspan="11" style="text-align:center;padding:20px;color:var(--muted);font-size:.8rem;">No marks match "<strong>${esc(term)}</strong>"</td>`;
+    tr.innerHTML=`<td colspan="12" style="text-align:center;padding:20px;color:var(--muted);font-size:.8rem;">No marks match "<strong>${esc(term)}</strong>"</td>`;
     tb.appendChild(tr);
     updateColHeaders(); return;
   }
@@ -2040,6 +2107,7 @@ function renderAll(){
       <td class="mono csrc">${lns}</td>
       <td class="mono calt">${la}</td>
       <td class="mono calt">${lna}</td>
+      <td style="font-size:.68rem;color:var(--muted);max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(w.srcFile||w.ff||'')}">${srcCell(w)}</td>
       <td style="font-size:.68rem;color:var(--muted);white-space:nowrap">${fmtWptDate(w)}</td>
       <td>${bdg[w.status]||''}</td>`;
     const _en0=makeEN(w);const _td0=tr.querySelector('.en-td-'+w.id);_td0.appendChild(_en0);attachENtoTD(_td0,_en0);
@@ -2064,7 +2132,7 @@ function renderAll(){
 // ─── GROUP CARD HELPER ───────────────────────────────
 function coordTDs(w){
   const {ls,lns,la,lna}=coordCells(w);
-  return `<td class="mono csrc" style="font-size:.68rem">${ls}</td><td class="mono csrc" style="font-size:.68rem">${lns}</td><td class="mono calt" style="font-size:.68rem">${la}</td><td class="mono calt" style="font-size:.68rem">${lna}</td><td style="font-size:.68rem;color:var(--muted);white-space:nowrap">${fmtWptDate(w)}</td><td class="desc-td-${w.id}" style="font-size:.71rem;max-width:140px;"></td>`;
+  return `<td class="mono csrc" style="font-size:.68rem">${ls}</td><td class="mono csrc" style="font-size:.68rem">${lns}</td><td class="mono calt" style="font-size:.68rem">${la}</td><td class="mono calt" style="font-size:.68rem">${lna}</td><td style="font-size:.68rem;color:var(--muted);max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(w.srcFile||w.ff||'')}">${srcCell(w)}</td><td style="font-size:.68rem;color:var(--muted);white-space:nowrap">${fmtWptDate(w)}</td><td class="desc-td-${w.id}" style="font-size:.71rem;max-width:140px;"></td>`;
 }
 
 // ─── RENDER EXACT GROUPS ─────────────────────────────
@@ -2353,7 +2421,8 @@ function buildClean(){
       <td class="mono csrc" style="font-size:.68rem">${ls}</td>
       <td class="mono csrc" style="font-size:.68rem">${lns}</td>
       <td class="mono calt" style="font-size:.68rem">${la}</td>
-      <td class="mono calt" style="font-size:.68rem">${lna}</td>`;
+      <td class="mono calt" style="font-size:.68rem">${lna}</td>
+      <td style="font-size:.68rem;color:var(--muted);max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(w.srcFile||w.ff||'')}">${srcCell(w)}</td>`;
     {const dtd=tr.querySelector('.desc-td-'+w.id);const dsp=makeDescEl(w);dtd.appendChild(dsp);attachDescToTD(dtd,dsp);}
     tr.addEventListener('click',()=>showMap([w]));
     tb.appendChild(tr);
@@ -2376,6 +2445,7 @@ function buildClean(){
       <td class="mono csrc" style="font-size:.68rem">${lns}</td>
       <td class="mono calt" style="font-size:.68rem">${la}</td>
       <td class="mono calt" style="font-size:.68rem">${lna}</td>
+      <td style="font-size:.68rem;color:var(--muted);max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(w.srcFile||w.ff||'')}">${srcCell(w)}</td>
       <td style="font-size:.68rem;color:var(--muted);white-space:nowrap">${fmtWptDate(w)}</td>`;
     {const dtd=tr.querySelector('.desc-td-'+w.id);const dsp=makeDescEl(w);dtd.appendChild(dsp);attachDescToTD(dtd,dsp);}
     tr.addEventListener('click',()=>showMap([w]));
@@ -2852,14 +2922,18 @@ document.getElementById('helpBtn').addEventListener('click', openWelcome);
 })();
 function closeWelcome(){
   const modal=document.getElementById('welcomeModal');
-  // Trigger dissolve animation, then fully hide after it completes
+  // Force a quick, consistent dissolve regardless of whatever transition
+  // duration the entrance fade-in left on the element (that one runs .7s,
+  // which made closing feel sluggish) — closing should be snappy.
+  modal.style.transition='opacity .15s ease';
   modal.classList.add('dissolving');
   setTimeout(()=>{
     modal.classList.add('closed');
     modal.classList.remove('dissolving');
-  }, 620);
+  }, 160);
 }
 document.getElementById('welcomeClose').addEventListener('click', closeWelcome);
+document.getElementById('welcomeCloseX').addEventListener('click', closeWelcome);
 document.getElementById('welcomeModal').addEventListener('click',e=>{
   if(e.target===document.getElementById('welcomeModal')) closeWelcome();
 });
@@ -3888,7 +3962,7 @@ function _awSave() {
     name, en: name,
     lat: coords.lat, lon: coords.lon,
     dt: new Date(),
-    sf: 'dd', ff: 'manual',
+    sf: 'dd', ff: 'manual', srcFile: 'Manual entry',
     status: 'ok', note: '', keepInGroup: false, snFlag: false
   };
 
@@ -4108,36 +4182,45 @@ function extractPhotoGPS(buffer){
 // Mirrors loadFile()'s flow exactly: extracted points go straight into WP
 // via finalize(), get a Loaded Files chip, and run through the normal
 // analyse/dedupe pipeline — photos are just another mark source.
-// Renders a low-res preview (max 220px, JPEG ~60% quality) via canvas so the
-// mark can show "what this photo looked like" even after the source file is
-// gone. Only works for formats the browser can actually decode into an
-// <img> — JPEG/PNG in practice; HEIC has no native decode support in most
-// browsers, so this simply fails (caught by the caller) and no thumb is
-// stored for those. Lives only in memory — gone on reload, like everything
-// else in this app.
-function makePhotoThumb(buffer,mime){
+// Decodes the photo once and produces two things from it:
+//  - thumb: a sharp-ish inline preview (max 380px, JPEG ~82% quality) for
+//    the compact box under the map
+//  - full: an object URL over the ORIGINAL, unmodified bytes — zero quality
+//    loss, so clicking through to the lightbox shows the photo exactly as
+//    shot, not a re-encoded copy. Deliberately never revoked here (it needs
+//    to outlive this function) — like everything else in this app, it's
+//    just released when the page reloads.
+// Only works for formats the browser can actually decode into an <img> —
+// JPEG/PNG in practice; HEIC has no native decode support in most browsers,
+// so this simply fails (caught by the caller) and the mark gets no preview.
+function makePhotoPreview(buffer,mime,fileSize){
   return new Promise((resolve,reject)=>{
     const blob=new Blob([buffer],{type:mime||'image/jpeg'});
-    const url=URL.createObjectURL(blob);
+    const fullUrl=URL.createObjectURL(blob);
     const img=new Image();
     img.onload=()=>{
       try{
         const w=img.naturalWidth,h=img.naturalHeight;
         if(!w||!h) throw new Error('no dimensions');
-        const maxDim=220;
+        const maxDim=380;
         const scale=Math.min(1,maxDim/Math.max(w,h));
         const cw=Math.max(1,Math.round(w*scale)),ch=Math.max(1,Math.round(h*scale));
         const canvas=document.createElement('canvas');
         canvas.width=cw;canvas.height=ch;
         canvas.getContext('2d').drawImage(img,0,0,cw,ch);
-        const dataUrl=canvas.toDataURL('image/jpeg',0.6);
-        URL.revokeObjectURL(url);
-        resolve(dataUrl);
-      }catch(e){ URL.revokeObjectURL(url); reject(e); }
+        const thumb=canvas.toDataURL('image/jpeg',0.82);
+        resolve({thumb,full:fullUrl,width:w,height:h,size:fileSize});
+      }catch(e){ URL.revokeObjectURL(fullUrl); reject(e); }
     };
-    img.onerror=()=>{ URL.revokeObjectURL(url); reject(new Error('decode failed')); };
-    img.src=url;
+    img.onerror=()=>{ URL.revokeObjectURL(fullUrl); reject(new Error('decode failed')); };
+    img.src=fullUrl;
   });
+}
+function fmtBytes(n){
+  if(!n) return '';
+  if(n<1024) return n+' B';
+  if(n<1024*1024) return (n/1024).toFixed(0)+' KB';
+  return (n/1024/1024).toFixed(1)+' MB';
 }
 
 let photoBatchCount=0;
@@ -4153,8 +4236,12 @@ async function loadPhotos(fileList){
       const buffer=await file.arrayBuffer();
       const gps=extractPhotoGPS(buffer);
       if(!gps){ skipped++; continue; }
-      const point={lat:gps.lat,lon:gps.lon,name:file.name.replace(/\.[^.]+$/,''),dt:new Date(file.lastModified),sf:'dd',ff:batchName,desc:'',photo:true};
-      try{ point.thumb=await makePhotoThumb(buffer,file.type); }catch(e){ /* no decodable preview (e.g. HEIC) — mark still gets added, just no thumbnail */ }
+      const point={lat:gps.lat,lon:gps.lon,name:file.name.replace(/\.[^.]+$/,''),dt:new Date(file.lastModified),sf:'dd',ff:batchName,srcFile:file.name,desc:'',photo:true};
+      try{
+        const preview=await makePhotoPreview(buffer,file.type,file.size);
+        point.thumb=preview.thumb; point.full=preview.full;
+        point.imgW=preview.width; point.imgH=preview.height; point.fileSize=preview.size;
+      }catch(e){ /* no decodable preview (e.g. HEIC) — mark still gets added, just no preview */ }
       raw.push(point);
     }catch(e){ skipped++; }
   }
