@@ -556,6 +556,13 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
 /* ── TRACK PANEL (hidden by default) ── */
 #trackPanel{display:none;flex:1;overflow:hidden;}
 #trackPanel.tp-on{display:flex;}
+
+/* ── PHOTO IMPORT PANEL (hidden by default) ── */
+#photoPanel{display:none;flex:1;flex-direction:column;overflow:hidden;background:var(--bg);}
+#photoPanel.pp-on{display:flex;}
+.ph-badge{display:inline-block;padding:2px 7px;border-radius:20px;font-size:.62rem;font-weight:700;text-transform:uppercase;}
+.ph-gps-yes{background:var(--green-lt);color:var(--green);}
+.ph-gps-no{background:var(--red-lt);color:var(--red);}
 .tp-sidebar{width:570px;flex-shrink:0;display:flex;flex-direction:column;border-right:1px solid var(--border);background:var(--white);overflow:hidden;}
 .tp-topbar{padding:10px 12px;border-bottom:1px solid var(--border);background:var(--card);display:flex;gap:6px;align-items:center;flex-wrap:wrap;flex-shrink:0;}
 .tp-list{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:5px;}
@@ -613,6 +620,7 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
   <div class="mode-toggle">
     <button class="mode-btn active" id="modeWpt" onclick="setMode('waypoint')">📍 Waypoints</button>
     <button class="mode-btn" id="modeTrk" onclick="setMode('track')">〰 Tracks</button>
+    <button class="mode-btn" id="modePhoto" onclick="setMode('photo')">📷 Photo Import</button>
   </div>
   <div class="header-right">
     <button class="rn-btn" id="rnBtn" title="Release Notes">
@@ -879,6 +887,52 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
     <canvas id="trLassoCanvas"></canvas>
     <div class="map-btn-group" id="trMapBtnGroup" style="display:none;">
       <button class="map-view-btn mvb-on" id="trMapViewBtn" onclick="toggleMapView('trk')">🛰 Satellite</button>
+    </div>
+  </div>
+</div>
+
+<!-- PHOTO IMPORT PANEL -->
+<div id="photoPanel">
+  <div class="tp-topbar" style="flex-shrink:0;">
+    <span style="font-weight:800;font-size:.85rem;color:var(--accent);flex:1">📷 Photo Import</span>
+    <span class="tab-badge" id="phBadge" style="background:var(--accent);display:none">0</span>
+  </div>
+  <div style="padding:14px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:14px;">
+    <div class="tr-dz" id="phDz">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+      <p>Drop <strong>JPEG photos</strong> here (one or many)<br>or <strong>click to browse</strong></p>
+    </div>
+    <input type="file" id="phFi" accept="image/jpeg,.jpg,.jpeg" multiple style="display:none">
+
+    <div class="empty" id="emPhoto">
+      <div class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div>
+      <h3>No photos loaded</h3>
+      <p>Drop one or more JPEG photos above — GPS coordinates and file dates are extracted automatically. Photos without GPS data are shown so you know which ones to check.</p>
+    </div>
+
+    <div id="phContent" style="display:none">
+      <div class="tcard">
+        <div class="bulk">
+          <button class="btn btn-outline btn-sm" id="phSelAll">All</button>
+          <button class="btn btn-outline btn-sm" id="phSelNone">None</button>
+          <span style="font-size:.72rem;color:var(--muted);margin-left:4px" id="phGpsCount"></span>
+          <button class="btn btn-green btn-sm" id="phAddBtn" style="margin-left:auto">📌 Add Selected to Marks</button>
+          <button class="btn btn-red btn-sm" id="phDelBtn">🗑 Remove Selected</button>
+        </div>
+        <div class="twrap"><table>
+          <thead><tr>
+            <th style="width:28px"><input type="checkbox" id="phCheck"></th>
+            <th>#</th>
+            <th>File</th>
+            <th>Name <small>(click to edit)</small></th>
+            <th class="csrc">Latitude</th>
+            <th class="csrc">Longitude</th>
+            <th style="color:var(--muted);font-size:.69rem">Date<br><small>(file, AEST)</small></th>
+            <th>GPS</th>
+          </tr></thead>
+          <tbody id="phBody"></tbody>
+        </table></div>
+      </div>
     </div>
   </div>
 </div>
@@ -1337,6 +1391,7 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
 <script>
 // ─── STATE ───────────────────────────────────────────
 let WP=[],EG=[],NG=[],SN=[],CS=[],BS=[]; // waypoints, exactGroups, nearGroups, sameNameGroups, cleanSet, binnedSet
+let PH=[],phSelIds=new Set(); // photo-import: extracted photo marks awaiting review
 let analysed=false, selIds=new Set();
 let _mapZoom=11, _mapPts=[];
 let allSearchTerm='';
@@ -2824,16 +2879,21 @@ function setMode(m) {
   appMode = m;
   document.getElementById('modeWpt').classList.toggle('active', m === 'waypoint');
   document.getElementById('modeTrk').classList.toggle('active', m === 'track');
+  document.getElementById('modePhoto').classList.toggle('active', m === 'photo');
   const isTrack = m === 'track';
-  document.querySelector('.content').style.display = isTrack ? 'none' : '';
-  document.querySelector('.sidebar').style.display = isTrack ? 'none' : '';
+  const isPhoto = m === 'photo';
+  document.querySelector('.content').style.display = (isTrack||isPhoto) ? 'none' : '';
+  document.querySelector('.sidebar').style.display = (isTrack||isPhoto) ? 'none' : '';
   const resizer = document.getElementById('mapResizer');
   const mapPanel = document.getElementById('mapPanel');
-  if(resizer) resizer.style.display = isTrack ? 'none' : '';
-  if(mapPanel) mapPanel.style.display = isTrack ? 'none' : '';
+  if(resizer) resizer.style.display = (isTrack||isPhoto) ? 'none' : '';
+  if(mapPanel) mapPanel.style.display = (isTrack||isPhoto) ? 'none' : '';
   const tp = document.getElementById('trackPanel');
   tp.classList.toggle('tp-on', isTrack);
+  const pp = document.getElementById('photoPanel');
+  pp.classList.toggle('pp-on', isPhoto);
   if (isTrack) { trRender(); setTimeout(()=>{ if(_trMap) _trMap.invalidateSize(); }, 150); }
+  if (isPhoto) { renderPhotos(); }
 }
 
 function trParseGPX(txt, fn) {
@@ -3789,6 +3849,254 @@ function _awSave() {
   showMap([newWpt]);
   toast(`✓ "${name}" added`, 'g');
 }
+
+// ─── PHOTO IMPORT — EXIF GPS EXTRACTION ──────────────
+// Minimal vanilla-JS JPEG/EXIF/TIFF reader — no external library, so photo
+// import stays fully offline like the rest of the app. Only JPEG carries
+// EXIF in the format parsed here; HEIC/PNG are reported as unsupported.
+const EXIF_TYPE_SIZE={1:1,2:1,3:2,4:4,5:8,7:1,9:4,10:8};
+
+function exifReadIFD(view,tiffStart,ifdOffset,little){
+  const count=view.getUint16(ifdOffset,little);
+  const tags={};
+  for(let i=0;i<count;i++){
+    const eo=ifdOffset+2+i*12;
+    const tag=view.getUint16(eo,little);
+    const type=view.getUint16(eo+2,little);
+    const num=view.getUint32(eo+4,little);
+    const tsz=EXIF_TYPE_SIZE[type]||1;
+    const total=tsz*num;
+    const valOff=total>4?tiffStart+view.getUint32(eo+8,little):eo+8;
+    tags[tag]=exifReadValue(view,valOff,type,num,little);
+  }
+  return tags;
+}
+
+function exifReadValue(view,offset,type,count,little){
+  if(count<=0) return null;
+  if(type===2){ // ASCII
+    let s='';
+    for(let i=0;i<count-1;i++) s+=String.fromCharCode(view.getUint8(offset+i));
+    return s;
+  }
+  if(type===5||type===10){ // RATIONAL / SRATIONAL
+    const vals=[];
+    for(let i=0;i<count;i++){
+      const num=type===5?view.getUint32(offset+i*8,little):view.getInt32(offset+i*8,little);
+      const den=type===5?view.getUint32(offset+i*8+4,little):view.getInt32(offset+i*8+4,little);
+      vals.push(den===0?0:num/den);
+    }
+    return count===1?vals[0]:vals;
+  }
+  if(type===3){ // SHORT
+    const vals=[];for(let i=0;i<count;i++)vals.push(view.getUint16(offset+i*2,little));
+    return count===1?vals[0]:vals;
+  }
+  if(type===4){ // LONG
+    const vals=[];for(let i=0;i<count;i++)vals.push(view.getUint32(offset+i*4,little));
+    return count===1?vals[0]:vals;
+  }
+  return null;
+}
+
+function exifDMSToDecimal(dms,ref){
+  if(!Array.isArray(dms)||dms.length!==3) return null;
+  let dec=dms[0]+dms[1]/60+dms[2]/3600;
+  if(ref==='S'||ref==='W') dec=-dec;
+  return isNaN(dec)?null:dec;
+}
+
+// Returns {lat,lon} or null. Never throws — callers treat null as "no GPS found".
+function extractPhotoGPS(buffer){
+  try{
+    const view=new DataView(buffer);
+    if(view.byteLength<4||view.getUint16(0,false)!==0xFFD8) return null; // not a JPEG
+    let offset=2;
+    while(offset+4<=view.byteLength){
+      if(view.getUint8(offset)!==0xFF) break;
+      const marker=view.getUint8(offset+1);
+      if(marker===0xD8||marker===0xD9||(marker>=0xD0&&marker<=0xD7)||marker===0x01){offset+=2;continue;}
+      if(marker===0xDA) break; // start of image data — no more header segments
+      const size=view.getUint16(offset+2,false);
+      if(marker===0xE1&&offset+10<=view.byteLength&&
+         view.getUint32(offset+4,false)===0x45786966&&view.getUint16(offset+8,false)===0x0000){
+        const tiffStart=offset+10;
+        const byteOrder=view.getUint16(tiffStart,false);
+        const little=byteOrder===0x4949;
+        if(byteOrder!==0x4949&&byteOrder!==0x4D4D) return null;
+        const ifd0Offset=view.getUint32(tiffStart+4,little);
+        const ifd0=exifReadIFD(view,tiffStart,tiffStart+ifd0Offset,little);
+        const gpsPtr=ifd0[0x8825];
+        if(gpsPtr==null) return null;
+        const gps=exifReadIFD(view,tiffStart,tiffStart+gpsPtr,little);
+        const lat=exifDMSToDecimal(gps[2],gps[1]);
+        const lon=exifDMSToDecimal(gps[4],gps[3]);
+        if(lat==null||lon==null||isNaN(lat)||isNaN(lon)) return null;
+        return{lat,lon};
+      }
+      offset+=2+size;
+    }
+    return null;
+  }catch(e){ return null; }
+}
+
+// ─── PHOTO IMPORT — LOAD & RENDER ────────────────────
+function phLoad(files){
+  const list=[...files];
+  if(!list.length) return;
+  showLoader('Reading '+list.length+(list.length===1?' photo…':' photos…'));
+  let done=0;
+  list.forEach(file=>{
+    const r=new FileReader();
+    r.onload=e=>{
+      const gps=extractPhotoGPS(e.target.result);
+      const isHeic=/\.(heic|heif)$/i.test(file.name);
+      PH.push({
+        id:String(Date.now())+String(Math.random()).slice(2,7),
+        name:file.name.replace(/\.[^.]+$/,''),
+        en:'',
+        ff:file.name,
+        lat:gps?gps.lat:null, lon:gps?gps.lon:null,
+        hasGps:!!gps,
+        dt:new Date(file.lastModified),
+        note:gps?'':(isHeic?'HEIC not supported — export as JPEG':'No GPS data found in this photo')
+      });
+      done++;
+      if(done===list.length){
+        hideLoader();
+        document.getElementById('phFi').value='';
+        renderPhotos();
+        const found=PH.filter(p=>p.hasGps).length;
+        toast(`📷 ${list.length} photo${list.length===1?'':'s'} processed — ${found} with GPS`, found?'g':'o');
+      }
+    };
+    r.onerror=()=>{
+      done++;
+      if(done===list.length){hideLoader();renderPhotos();}
+    };
+    r.readAsArrayBuffer(file);
+  });
+}
+
+function makePhotoEN(w){
+  const sp=document.createElement('span');
+  sp.className='ename'; sp.title='Click to edit mark name';
+  const dname=(w.en&&w.en.trim())?w.en:w.name||'';
+  sp.textContent=dname;
+  if(w.en&&w.en!==w.name) sp.style.color='var(--accent)';
+  sp.addEventListener('click',e=>{
+    e.stopPropagation();
+    const inp=document.createElement('input');
+    inp.className='einput'; inp.value=dname;
+    sp.replaceWith(inp); inp.focus(); inp.select();
+    function save(){ w.en=inp.value.trim(); renderPhotos(); }
+    function cancel(){ renderPhotos(); }
+    inp.addEventListener('blur',save);
+    inp.addEventListener('keydown',e2=>{
+      if(e2.key==='Enter'){e2.preventDefault();inp.removeEventListener('blur',save);save();}
+      if(e2.key==='Escape'){e2.preventDefault();inp.removeEventListener('blur',save);cancel();}
+      e2.stopPropagation();
+    });
+    inp.addEventListener('click',e2=>e2.stopPropagation());
+  });
+  return sp;
+}
+
+function renderPhotos(){
+  const tb=document.getElementById('phBody');
+  if(!tb) return;
+  tb.innerHTML='';
+  document.getElementById('emPhoto').style.display=PH.length?'none':'block';
+  document.getElementById('phContent').style.display=PH.length?'block':'none';
+  const badge=document.getElementById('phBadge');
+  badge.style.display=PH.length?'inline-block':'none';
+  badge.textContent=PH.length;
+
+  const gpsCount=PH.filter(p=>p.hasGps).length;
+  document.getElementById('phGpsCount').textContent=
+    PH.length?`${gpsCount} of ${PH.length} have GPS data`:'';
+
+  PH.forEach((p,i)=>{
+    const tr=document.createElement('tr');
+    tr.className=p.hasGps?'rn':'rd';
+    if(phSelIds.has(p.id)) tr.className+=' rs';
+    const dname=(p.en&&p.en.trim())?p.en:p.name;
+    tr.innerHTML=`
+      <td><input type="checkbox" class="phc" data-id="${p.id}" ${phSelIds.has(p.id)?'checked':''}></td>
+      <td style="color:var(--muted);font-size:.69rem">${i+1}</td>
+      <td style="font-size:.72rem;color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(p.ff)}">${esc(p.ff)}</td>
+      <td class="en-td-${p.id}" style="cursor:text;min-width:100px;"></td>
+      <td class="mono csrc">${p.hasGps?dd(p.lat):'—'}</td>
+      <td class="mono csrc">${p.hasGps?dd(p.lon):'—'}</td>
+      <td style="font-size:.68rem;color:var(--muted);white-space:nowrap">${fmtWptDate(p)}</td>
+      <td><span class="ph-badge ${p.hasGps?'ph-gps-yes':'ph-gps-no'}" title="${esc(p.note)}">${p.hasGps?'GPS Found':'No GPS'}</span></td>`;
+    const en=makePhotoEN(p); const td=tr.querySelector('.en-td-'+p.id); td.appendChild(en); attachENtoTD(td,en);
+    tr.querySelector('.phc').addEventListener('change',()=>{
+      if(tr.querySelector('.phc').checked) phSelIds.add(p.id); else phSelIds.delete(p.id);
+      renderPhotos();
+    });
+    tb.appendChild(tr);
+  });
+}
+
+// ─── PHOTO IMPORT — WIRING ────────────────────────────
+(function(){
+  const phDz=document.getElementById('phDz'), phFi=document.getElementById('phFi');
+  phDz.addEventListener('click',()=>phFi.click());
+  phDz.addEventListener('dragover',e=>{e.preventDefault();phDz.classList.add('over');});
+  phDz.addEventListener('dragleave',()=>phDz.classList.remove('over'));
+  phDz.addEventListener('drop',e=>{e.preventDefault();phDz.classList.remove('over');phLoad(e.dataTransfer.files);});
+  phFi.addEventListener('change',e=>phLoad(e.target.files));
+
+  document.getElementById('phSelAll').addEventListener('click',()=>{PH.forEach(p=>phSelIds.add(p.id));renderPhotos();});
+  document.getElementById('phSelNone').addEventListener('click',()=>{phSelIds.clear();renderPhotos();});
+  document.getElementById('phCheck').addEventListener('change',function(){
+    if(this.checked) PH.forEach(p=>phSelIds.add(p.id)); else phSelIds.clear();
+    renderPhotos();
+  });
+
+  document.getElementById('phDelBtn').addEventListener('click',()=>{
+    if(!phSelIds.size){toast('No photos selected','o');return;}
+    PH=PH.filter(p=>!phSelIds.has(p.id));
+    phSelIds.clear();
+    renderPhotos();
+  });
+
+  document.getElementById('phAddBtn').addEventListener('click',()=>{
+    // Selected photos if any are ticked, otherwise every photo that has GPS
+    let targets=phSelIds.size?PH.filter(p=>phSelIds.has(p.id)):PH.filter(p=>p.hasGps);
+    const withoutGps=targets.filter(p=>!p.hasGps).length;
+    targets=targets.filter(p=>p.hasGps);
+    if(!targets.length){
+      toast(withoutGps?'Selected photos have no GPS data to add':'No photos with GPS to add','r');
+      return;
+    }
+    const added=targets.map(p=>({
+      id:String(Date.now())+String(Math.random()).slice(2,7),
+      name:(p.en&&p.en.trim())?p.en:p.name, en:(p.en&&p.en.trim())?p.en:p.name,
+      lat:p.lat, lon:p.lon, dt:p.dt, sf:'dd', ff:p.ff,
+      status:'ok', note:'', keepInGroup:false, snFlag:false
+    }));
+    WP=[...WP,...added];
+    const addedIds=new Set(targets.map(t=>t.id));
+    PH=PH.filter(p=>!addedIds.has(p.id));
+    phSelIds.clear();
+
+    if(!loadedFileMeta.some(m=>m.name==='Photo Import')){
+      loadedFileMeta.push({name:'Photo Import',count:0,fmt:'GPS',skipped:0});
+    }
+    loadedFileMeta.find(m=>m.name==='Photo Import').count+=added.length;
+    document.getElementById('uploadSec').style.display='none';
+    document.getElementById('loadedSec').style.display='block';
+    renderFileChips();
+
+    renderPhotos();
+    renderAll(); badges();
+    analyse();
+    setMode('waypoint'); setTab('all');
+    toast(`✓ ${added.length} photo mark${added.length===1?'':'s'} added to Marks`,'g');
+  });
+})();
 
 </script>
 
