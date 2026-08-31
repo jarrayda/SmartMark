@@ -1575,29 +1575,45 @@ function label(w){
 }
 
 // ─── INLINE EXPORT-NAME EDIT ─────────────────────────
-// ─── DESCRIPTION CELL (click to expand — not part of dedup matching) ──
+// ─── DESCRIPTION CELL (click to edit, same pattern as export name) ────
+// Not part of dedup matching — editing here never triggers analyse()/
+// reanalyseSameNames(), it's purely descriptive metadata.
 function truncateDesc(s,n){ s=(s||'').trim(); return s.length>n?s.slice(0,n)+'…':s; }
+function attachDescToTD(td,sp){
+  td.style.cursor='text';
+  td.addEventListener('click',e=>{
+    if(e.target===sp||e.target.classList.contains('einput'))return;
+    e.stopPropagation();
+    sp.click();
+  });
+}
 function makeDescEl(w){
   const sp=document.createElement('span');
-  sp.className='desc-cell';
+  sp.className='ename'; sp.title='Click to edit description';
   const full=(w.desc||'').trim();
-  if(!full){ sp.textContent='—'; sp.style.color='var(--muted)'; return sp; }
-  const short=truncateDesc(full,20);
-  sp.textContent=short;
-  if(full.length>20){
-    sp.title='Click to view full description';
-    sp.style.cursor='pointer';
-    sp.style.borderBottom='1px dotted var(--muted)';
-    let expanded=false;
-    sp.addEventListener('click',e=>{
-      e.stopPropagation();
-      expanded=!expanded;
-      sp.textContent=expanded?full:short;
-      sp.style.whiteSpace=expanded?'normal':'nowrap';
-      sp.style.display=expanded?'inline-block':'inline';
-      sp.title=expanded?'Click to collapse':'Click to view full description';
+  sp.textContent=full?truncateDesc(full,20):'—';
+  if(!full) sp.style.color='var(--muted)';
+  sp.addEventListener('click',e=>{
+    e.stopPropagation();
+    const inp=document.createElement('input');
+    inp.className='einput'; inp.value=full;
+    inp.placeholder='Add a description…';
+    sp.replaceWith(inp); inp.focus(); inp.select();
+    function save(){
+      const changed=inp.value.trim()!==full;
+      w.desc=inp.value.trim();
+      const ns=makeDescEl(w); inp.replaceWith(ns);
+      if(changed) toast('✏️ Description updated','g');
+    }
+    function cancel(){ const ns=makeDescEl(w); inp.replaceWith(ns); }
+    inp.addEventListener('blur',save);
+    inp.addEventListener('keydown',e2=>{
+      if(e2.key==='Enter'){e2.preventDefault();inp.removeEventListener('blur',save);save();}
+      if(e2.key==='Escape'){e2.preventDefault();inp.removeEventListener('blur',save);cancel();}
+      e2.stopPropagation();
     });
-  }
+    inp.addEventListener('click',e2=>e2.stopPropagation());
+  });
   return sp;
 }
 
@@ -1786,7 +1802,7 @@ function finalize(raw){
   return raw.map((w,i)=>({
     id:String(Date.now()+i)+String(Math.random()).slice(2,7),
     name:w.name,en:w.name,lat:w.lat,lon:w.lon,
-    dt:w.dt,sf:w.sf||'dd',ff:w.ff||'',desc:w.desc||'',thumb:w.thumb||null,
+    dt:w.dt,sf:w.sf||'dd',ff:w.ff||'',desc:w.desc||'',thumb:w.thumb||null,photo:!!w.photo,
     status:'ok',note:'',keepInGroup:false,snFlag:false
   }));
 }
@@ -2017,7 +2033,7 @@ function renderAll(){
     tr.innerHTML=`
       <td><input type="checkbox" class="rc" data-id="${w.id}" ${selIds.has(w.id)?'checked':''}></td>
       <td style="color:var(--muted);font-size:.69rem">${i+1}</td>
-      <td style="font-weight:600;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(w.name)}">${term?esc(w.name).replace(new RegExp('('+term.replace(/[.*+?^${}()|[\\]\\\\]/g,'\\\\$&')+')','gi'),'<mark style="background:#fef3c7;border-radius:2px">$1</mark>'):esc(w.name)}</td>
+      <td style="font-weight:600;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(w.name)}">${w.photo?'<span title="From photo import" style="margin-right:3px;">📷</span>':''}${term?esc(w.name).replace(new RegExp('('+term.replace(/[.*+?^${}()|[\\]\\\\]/g,'\\\\$&')+')','gi'),'<mark style="background:#fef3c7;border-radius:2px">$1</mark>'):esc(w.name)}</td>
       <td class="en-td-${w.id}" style="cursor:text;min-width:90px;"></td>
       <td class="desc-td-${w.id}" style="font-size:.75rem;max-width:140px;"></td>
       <td class="mono csrc">${ls}</td>
@@ -2027,7 +2043,7 @@ function renderAll(){
       <td style="font-size:.68rem;color:var(--muted);white-space:nowrap">${fmtWptDate(w)}</td>
       <td>${bdg[w.status]||''}</td>`;
     const _en0=makeEN(w);const _td0=tr.querySelector('.en-td-'+w.id);_td0.appendChild(_en0);attachENtoTD(_td0,_en0);
-    tr.querySelector('.desc-td-'+w.id).appendChild(makeDescEl(w));
+    {const dtd=tr.querySelector('.desc-td-'+w.id);const dsp=makeDescEl(w);dtd.appendChild(dsp);attachDescToTD(dtd,dsp);}
     tr.addEventListener('click',e=>{
       if(e.target.type==='checkbox'||e.target.tagName==='INPUT'||e.target.classList.contains('ename')||e.target.classList.contains('einput'))return;
       const multi=e.shiftKey||e.ctrlKey||e.metaKey;
@@ -2083,7 +2099,7 @@ function renderExact(){
         </table></div>
       </div>`;
     list.appendChild(card);
-    g.members.forEach(w=>{const td=card.querySelector('.etd-'+w.id);if(td){const sp=makeEN(w);td.appendChild(sp);attachENtoTD(td,sp);}const dtd=card.querySelector('.desc-td-'+w.id);if(dtd)dtd.appendChild(makeDescEl(w));});
+    g.members.forEach(w=>{const td=card.querySelector('.etd-'+w.id);if(td){const sp=makeEN(w);td.appendChild(sp);attachENtoTD(td,sp);}const dtd=card.querySelector('.desc-td-'+w.id);if(dtd){const dsp=makeDescEl(w);dtd.appendChild(dsp);attachDescToTD(dtd,dsp);}});
   });
 }
 
@@ -2128,7 +2144,7 @@ function renderNear(){
         </div>
       </div>`;
     list.appendChild(card);
-    g.members.forEach(w=>{const td=card.querySelector('.ntd-'+w.id);if(td){const sp=makeEN(w);td.appendChild(sp);attachENtoTD(td,sp);}const dtd=card.querySelector('.desc-td-'+w.id);if(dtd)dtd.appendChild(makeDescEl(w));});
+    g.members.forEach(w=>{const td=card.querySelector('.ntd-'+w.id);if(td){const sp=makeEN(w);td.appendChild(sp);attachENtoTD(td,sp);}const dtd=card.querySelector('.desc-td-'+w.id);if(dtd){const dsp=makeDescEl(w);dtd.appendChild(dsp);attachDescToTD(dtd,dsp);}});
   });
 }
 
@@ -2173,7 +2189,7 @@ function renderSameName(){
         </div>
       </div>`;
     list.appendChild(card);
-    g.members.forEach(w=>{const td=card.querySelector('.std-'+w.id);if(td){const sp=makeEN(w);td.appendChild(sp);attachENtoTD(td,sp);}const dtd=card.querySelector('.desc-td-'+w.id);if(dtd)dtd.appendChild(makeDescEl(w));});
+    g.members.forEach(w=>{const td=card.querySelector('.std-'+w.id);if(td){const sp=makeEN(w);td.appendChild(sp);attachENtoTD(td,sp);}const dtd=card.querySelector('.desc-td-'+w.id);if(dtd){const dsp=makeDescEl(w);dtd.appendChild(dsp);attachDescToTD(dtd,dsp);}});
   });
 }
 
@@ -2338,7 +2354,7 @@ function buildClean(){
       <td class="mono csrc" style="font-size:.68rem">${lns}</td>
       <td class="mono calt" style="font-size:.68rem">${la}</td>
       <td class="mono calt" style="font-size:.68rem">${lna}</td>`;
-    tr.querySelector('.desc-td-'+w.id).appendChild(makeDescEl(w));
+    {const dtd=tr.querySelector('.desc-td-'+w.id);const dsp=makeDescEl(w);dtd.appendChild(dsp);attachDescToTD(dtd,dsp);}
     tr.addEventListener('click',()=>showMap([w]));
     tb.appendChild(tr);
   });
@@ -2353,7 +2369,7 @@ function buildClean(){
     const reason=w.status==='exact_dupe'?'Exact duplicate':w.status==='near_dupe'?'Near duplicate':w.note||'Flagged';
     const tr=document.createElement('tr');tr.className='rd';
     tr.innerHTML=`<td style="color:var(--muted);font-size:.69rem">${i+1}</td>
-      <td style="font-weight:600;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(w.name)}">${esc(w.name)}</td>
+      <td style="font-weight:600;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(w.name)}">${w.photo?'<span title="From photo import" style="margin-right:3px;">📷</span>':''}${esc(w.name)}</td>
       <td class="desc-td-${w.id}" style="font-size:.71rem;max-width:140px;"></td>
       <td><span class="badge ${w.status==='exact_dupe'?'bex':'bnd'}">${esc(reason)}</span></td>
       <td class="mono csrc" style="font-size:.68rem">${ls}</td>
@@ -2361,7 +2377,7 @@ function buildClean(){
       <td class="mono calt" style="font-size:.68rem">${la}</td>
       <td class="mono calt" style="font-size:.68rem">${lna}</td>
       <td style="font-size:.68rem;color:var(--muted);white-space:nowrap">${fmtWptDate(w)}</td>`;
-    tr.querySelector('.desc-td-'+w.id).appendChild(makeDescEl(w));
+    {const dtd=tr.querySelector('.desc-td-'+w.id);const dsp=makeDescEl(w);dtd.appendChild(dsp);attachDescToTD(dtd,dsp);}
     tr.addEventListener('click',()=>showMap([w]));
     tb2.appendChild(tr);
   });
@@ -4137,7 +4153,7 @@ async function loadPhotos(fileList){
       const buffer=await file.arrayBuffer();
       const gps=extractPhotoGPS(buffer);
       if(!gps){ skipped++; continue; }
-      const point={lat:gps.lat,lon:gps.lon,name:file.name.replace(/\.[^.]+$/,''),dt:new Date(file.lastModified),sf:'dd',ff:batchName,desc:''};
+      const point={lat:gps.lat,lon:gps.lon,name:file.name.replace(/\.[^.]+$/,''),dt:new Date(file.lastModified),sf:'dd',ff:batchName,desc:'',photo:true};
       try{ point.thumb=await makePhotoThumb(buffer,file.type); }catch(e){ /* no decodable preview (e.g. HEIC) — mark still gets added, just no thumbnail */ }
       raw.push(point);
     }catch(e){ skipped++; }
